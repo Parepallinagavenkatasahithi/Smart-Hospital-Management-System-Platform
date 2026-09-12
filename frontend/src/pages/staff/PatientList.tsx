@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Search, Plus, MoreVertical, Edit, FileText, Calendar } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import {  } from 'react-router-dom';
 
 const mockPatients = [
   { id: '1', name: 'Mounika Reddy', gender: 'Female', age: 36, phone: '1122334455', lastVisit: '2026-09-10', status: 'Active' },

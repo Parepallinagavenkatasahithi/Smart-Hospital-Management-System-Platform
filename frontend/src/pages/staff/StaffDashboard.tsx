@@ -1,4 +1,4 @@
-import { Users, Calendar, FlaskConical, Stethoscope, ArrowRight, Activity, Clock } from 'lucide-react';
+import { Users, Calendar, FlaskConical, Stethoscope, Activity, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function StaffDashboard() {

@@ -1,6 +1,6 @@
-import { Users, Stethoscope, Calendar, Bed, DollarSign, Activity, TrendingUp } from 'lucide-react';
+import { Users, Stethoscope, Bed, DollarSign, Activity, TrendingUp } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { Link } from 'react-router-dom';
+import {  } from 'react-router-dom';
 
 const revenueData = [
   { name: 'Jan', value: 4000 },

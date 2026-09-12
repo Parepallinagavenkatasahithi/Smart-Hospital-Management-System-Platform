@@ -19,7 +19,8 @@ with zipfile.ZipFile(output_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
             zinfo = zipfile.ZipInfo.from_file(file_path, arcname)
             
             # 0o100644 maps to standard rw-r--r-- Unix permissions.
-            zinfo.external_attr = 0o100644 << 16 
+            zinfo.external_attr = 0o100644 << 16
+            zinfo.compress_type = zipfile.ZIP_DEFLATED 
             
             with open(file_path, 'rb') as f:
                 zipf.writestr(zinfo, f.read())
