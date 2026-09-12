@@ -1,20 +1,17 @@
-import { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, Calendar, Stethoscope, Building, 
   FileText, Pill, FlaskConical, Bed, CreditCard, 
-  Bell, BarChart3, Bot, Settings, User, LogOut, ShieldCheck
+  Bell, BarChart3, Bot, Settings, User, LogOut, ShieldCheck, ClipboardList, Activity
 } from 'lucide-react';
 
 interface SidebarProps {
-  role: 'PATIENT' | 'STAFF' | 'MANAGEMENT';
+  role: 'PATIENT' | 'STAFF' | 'MANAGEMENT' | 'DOCTOR' | 'NURSE' | 'RECEPTIONIST' | 'PHARMACIST' | 'LAB_TECHNICIAN' | 'ACCOUNTANT' | 'ADMIN';
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
 }
 
-export default function Sidebar({ role, isOpen, setIsOpen }: SidebarProps) {
-  const location = useLocation();
-
+export default function Sidebar({ role, isOpen }: SidebarProps) {
   const patientLinks = [
     { name: 'Dashboard', path: '/patient/dashboard', icon: LayoutDashboard },
     { name: 'My Appointments', path: '/patient/appointments', icon: Calendar },
@@ -46,29 +43,35 @@ export default function Sidebar({ role, isOpen, setIsOpen }: SidebarProps) {
 
   const managementLinks = [
     { name: 'Executive Dashboard', path: '/management/dashboard', icon: LayoutDashboard },
-    { name: 'Patients', path: '/management/patients', icon: Users },
+    { name: 'Patients Directory', path: '/management/patients', icon: Users },
     { name: 'Staff Management', path: '/management/staff', icon: ShieldCheck },
-    { name: 'Doctors', path: '/management/doctors', icon: Stethoscope },
+    { name: 'Doctors Roster', path: '/management/doctors', icon: Stethoscope },
     { name: 'Departments', path: '/management/departments', icon: Building },
     { name: 'Appointments', path: '/management/appointments', icon: Calendar },
     { name: 'Medical Records', path: '/management/records', icon: FileText },
-    { name: 'Laboratory', path: '/management/lab', icon: FlaskConical },
-    { name: 'Pharmacy', path: '/management/pharmacy', icon: Pill },
-    { name: 'Beds & Rooms', path: '/management/beds', icon: Bed },
+    { name: 'Laboratory Workspace', path: '/management/lab', icon: FlaskConical },
+    { name: 'Pharmacy Stock', path: '/management/pharmacy', icon: Pill },
+    { name: 'Bed Occupancy', path: '/management/beds', icon: Bed },
     { name: 'Billing & Revenue', path: '/management/billing', icon: CreditCard },
-    { name: 'Reports & Analytics', path: '/management/reports', icon: BarChart3 },
-    { name: 'AI Hospital Assistant', path: '/management/ai', icon: Bot },
-    { name: 'Audit Logs', path: '/management/audit', icon: FileText },
-    { name: 'User Management', path: '/management/users', icon: ShieldCheck },
+    { name: 'Reports Center', path: '/management/reports', icon: BarChart3 },
+    { name: 'AI Assistant', path: '/management/ai', icon: Bot },
+    { name: 'Audit Logs', path: '/management/audit', icon: ClipboardList },
+    { name: 'User Accounts', path: '/management/users', icon: Activity },
   ];
 
-  const links = role === 'PATIENT' ? patientLinks : role === 'STAFF' ? staffLinks : managementLinks;
-  const basePath = role === 'PATIENT' ? '/patient' : role === 'STAFF' ? '/staff' : '/management';
+  const links = role === 'PATIENT' ? patientLinks : role === 'MANAGEMENT' || role === 'ADMIN' ? managementLinks : staffLinks;
+  const basePath = role === 'PATIENT' ? '/patient' : role === 'MANAGEMENT' || role === 'ADMIN' ? '/management' : '/staff';
 
   return (
-    <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-brand-200 transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0`}>
-      <div className="h-16 flex items-center px-6 border-b border-brand-200">
-        <h1 className="text-xl font-bold text-brand-900 tracking-tight">SHMS</h1>
+    <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-health-gray transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0`}>
+      <div className="h-16 flex items-center px-6 border-b border-health-gray bg-health-ivory">
+        <div className="w-8 h-8 rounded-lg bg-health-olive flex items-center justify-center text-white font-bold mr-3 shadow-sm">
+          S
+        </div>
+        <div>
+          <h1 className="text-base font-bold text-health-charcoal tracking-tight">SHMS Platform</h1>
+          <p className="text-[10px] uppercase font-semibold tracking-wider text-health-gold">Smart Hospital</p>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 custom-scrollbar">
@@ -79,40 +82,41 @@ export default function Sidebar({ role, isOpen, setIsOpen }: SidebarProps) {
             className={({ isActive }) =>
               `flex items-center px-3 py-2.5 rounded-lg transition-colors text-sm font-medium ${
                 isActive
-                  ? 'bg-brand-50 text-brand-700'
-                  : 'text-text-muted hover:bg-brand-50 hover:text-brand-700'
+                  ? 'bg-health-sage/40 text-health-charcoal font-semibold border-l-4 border-health-olive'
+                  : 'text-health-olive hover:bg-health-ivory hover:text-health-charcoal'
               }`
             }
           >
-            <link.icon className="w-5 h-5 mr-3" />
-            {link.name}
+            <link.icon className="w-4 h-4 mr-3 flex-shrink-0" />
+            <span className="truncate">{link.name}</span>
           </NavLink>
         ))}
       </div>
 
-      <div className="p-4 border-t border-brand-200 space-y-1">
+      <div className="p-4 border-t border-health-gray space-y-1 bg-health-ivory/50">
         <NavLink
           to={`${basePath}/profile`}
-          className="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-text-muted hover:bg-brand-50 hover:text-brand-700 transition-colors"
+          className="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-health-olive hover:bg-health-ivory hover:text-health-charcoal transition-colors"
         >
-          <User className="w-5 h-5 mr-3" />
+          <User className="w-4 h-4 mr-3" />
           Profile
         </NavLink>
         <NavLink
           to={`${basePath}/settings`}
-          className="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-text-muted hover:bg-brand-50 hover:text-brand-700 transition-colors"
+          className="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-health-olive hover:bg-health-ivory hover:text-health-charcoal transition-colors"
         >
-          <Settings className="w-5 h-5 mr-3" />
+          <Settings className="w-4 h-4 mr-3" />
           Settings
         </NavLink>
         <button
           onClick={() => {
-            // TODO: Implement Logout
+            localStorage.removeItem('shms_token');
+            localStorage.removeItem('shms_user');
             window.location.href = '/login';
           }}
-          className="w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+          className="w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-health-red hover:bg-red-50 transition-colors"
         >
-          <LogOut className="w-5 h-5 mr-3" />
+          <LogOut className="w-4 h-4 mr-3" />
           Logout
         </button>
       </div>

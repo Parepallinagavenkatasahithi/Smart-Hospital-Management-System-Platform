@@ -1,159 +1,185 @@
-import { Calendar, Clock, Stethoscope, Pill, FlaskConical, CreditCard, Activity, ArrowRight, FileText } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Calendar, FileText, Pill, FlaskConical, CreditCard, Bot, ArrowRight, Activity, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { apiFetch } from '../../services/api';
+import { StatusBadge, LoadingSkeleton } from '../../components/CommonUI';
 
 export default function PatientDashboard() {
+  const [loading, setLoading] = useState(true);
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [records, setRecords] = useState<any[]>([]);
+  const [prescriptions, setPrescriptions] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [appts, recs, rxs, invs] = await Promise.all([
+          apiFetch('/appointments?limit=3'),
+          apiFetch('/records'),
+          apiFetch('/prescriptions'),
+          apiFetch('/billing')
+        ]);
+        setAppointments(appts || []);
+        setRecords(recs || []);
+        setPrescriptions(rxs || []);
+        setInvoices(invs || []);
+      } catch (e) {
+        console.error('Failed to load patient dashboard:', e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  if (loading) return <LoadingSkeleton rows={6} />;
+
+  const upcomingAppt = appointments[0];
+  const pendingInvoices = invoices.filter(i => i.status === 'PENDING' || i.status === 'PARTIALLY_PAID');
+  const outstandingAmount = pendingInvoices.reduce((sum, i) => sum + (i.finalAmount - i.paidAmount), 0);
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Welcome Banner */}
+      <div className="bg-white rounded-2xl border border-health-gray p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-brand-900">Welcome back, Mounika</h2>
-          <p className="text-text-muted mt-1">Here's an overview of your healthcare activity.</p>
+          <h1 className="text-xl font-bold text-health-charcoal">Welcome Back, Patient Workspace</h1>
+          <p className="text-sm text-health-olive">Here is your consolidated medical overview and upcoming appointments.</p>
         </div>
-        <button onClick={() => alert("Action triggered successfully! Real-time module connection pending.")} className="bg-brand-700 hover:bg-brand-800 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm flex items-center w-fit">
-          <Calendar className="w-5 h-5 mr-2" />
-          Book Appointment
-        </button>
+        <Link
+          to="/patient/appointments"
+          className="px-4 py-2 bg-health-olive hover:bg-health-charcoal text-white text-sm font-medium rounded-xl transition-colors shadow-sm flex items-center space-x-2"
+        >
+          <Calendar className="w-4 h-4" />
+          <span>Book New Appointment</span>
+        </Link>
       </div>
 
-      {/* Top Stats / Quick Info */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl shadow-card border border-brand-100 flex items-center">
-          <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mr-4">
+      {/* Quick Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white p-5 rounded-2xl border border-health-gray shadow-sm flex items-center space-x-4">
+          <div className="p-3 bg-amber-50 text-amber-700 rounded-xl">
             <Calendar className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm font-medium text-text-muted">Next Appointment</p>
-            <p className="text-lg font-bold text-text-dark">Tomorrow, 10:00 AM</p>
+            <p className="text-xs font-semibold text-health-olive uppercase">Appointments</p>
+            <p className="text-xl font-bold text-health-charcoal">{appointments.length}</p>
           </div>
         </div>
-        
-        <div className="bg-white p-5 rounded-2xl shadow-card border border-brand-100 flex items-center">
-          <div className="w-12 h-12 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center mr-4">
+
+        <div className="bg-white p-5 rounded-2xl border border-health-gray shadow-sm flex items-center space-x-4">
+          <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl">
+            <FileText className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-health-olive uppercase">Medical Records</p>
+            <p className="text-xl font-bold text-health-charcoal">{records.length}</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-health-gray shadow-sm flex items-center space-x-4">
+          <div className="p-3 bg-blue-50 text-blue-700 rounded-xl">
             <Pill className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm font-medium text-text-muted">Active Prescriptions</p>
-            <p className="text-lg font-bold text-text-dark">2 Medicines</p>
+            <p className="text-xs font-semibold text-health-olive uppercase">Prescriptions</p>
+            <p className="text-xl font-bold text-health-charcoal">{prescriptions.length}</p>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl shadow-card border border-brand-100 flex items-center">
-          <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mr-4">
-            <FlaskConical className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-text-muted">Lab Reports</p>
-            <p className="text-lg font-bold text-text-dark">1 Ready</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl shadow-card border border-brand-100 flex items-center">
-          <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mr-4">
+        <div className="bg-white p-5 rounded-2xl border border-health-gray shadow-sm flex items-center space-x-4">
+          <div className="p-3 bg-purple-50 text-purple-700 rounded-xl">
             <CreditCard className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm font-medium text-text-muted">Outstanding Balance</p>
-            <p className="text-lg font-bold text-text-dark">$150.00</p>
+            <p className="text-xs font-semibold text-health-olive uppercase">Outstanding Bill</p>
+            <p className="text-xl font-bold text-health-charcoal">${outstandingAmount.toFixed(2)}</p>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content Area: Upcoming Appointment */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-2xl shadow-card border border-brand-100 overflow-hidden">
-            <div className="p-5 border-b border-brand-100 flex justify-between items-center bg-brand-50/50">
-              <h3 className="font-bold text-lg text-brand-900">Upcoming Appointment</h3>
-              <span className="px-3 py-1 bg-brand-100 text-brand-700 text-xs font-semibold rounded-full">Confirmed</span>
-            </div>
-            <div className="p-5 flex flex-col sm:flex-row gap-6">
-              <div className="flex-1">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-brand-100 rounded-full flex items-center justify-center text-brand-700 font-bold mr-4">
-                    PS
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-text-dark text-lg">Dr. Priya Sharma</h4>
-                    <p className="text-brand-600 font-medium text-sm">Cardiologist • Cardiology Dept</p>
-                  </div>
-                </div>
-                <div className="flex items-center text-text-muted mb-2">
-                  <Calendar className="w-4 h-4 mr-2" /> <span>Oct 15, 2026</span>
-                </div>
-                <div className="flex items-center text-text-muted">
-                  <Clock className="w-4 h-4 mr-2" /> <span>10:00 AM - 10:30 AM</span>
-                </div>
-              </div>
-              <div className="sm:border-l sm:border-brand-100 sm:pl-6 flex flex-col justify-center gap-3">
-                <button onClick={() => alert("Action triggered successfully! Real-time module connection pending.")} className="w-full text-brand-700 bg-brand-50 hover:bg-brand-100 font-medium py-2 px-4 rounded-lg transition-colors text-sm">Reschedule</button>
-                <button onClick={() => alert("Action triggered successfully! Real-time module connection pending.")} className="w-full text-red-600 bg-red-50 hover:bg-red-100 font-medium py-2 px-4 rounded-lg transition-colors text-sm">Cancel</button>
-              </div>
-            </div>
+        {/* Next Appointment Card */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-health-gray p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-health-gray pb-3">
+            <h2 className="text-base font-bold text-health-charcoal flex items-center space-x-2">
+              <Clock className="w-5 h-5 text-health-olive" />
+              <span>Next Upcoming Consultation</span>
+            </h2>
+            <Link to="/patient/appointments" className="text-xs font-semibold text-health-olive hover:text-health-charcoal">
+              View All
+            </Link>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-card border border-brand-100 p-5">
-            <h3 className="font-bold text-lg text-brand-900 mb-4">Health Activity</h3>
-            <div className="space-y-4">
-              <div className="flex items-start">
-                <div className="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center mt-1 mr-3 shrink-0">
-                  <FlaskConical className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="font-medium text-text-dark">Lipid Profile Results Available</p>
-                  <p className="text-sm text-text-muted">Your recent blood work results have been uploaded by the laboratory.</p>
-                  <p className="text-xs text-brand-500 mt-1">2 hours ago</p>
-                </div>
-              </div>
-              <div className="flex items-start">
-                <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center mt-1 mr-3 shrink-0">
-                  <Stethoscope className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="font-medium text-text-dark">Follow-up Recommended</p>
-                  <p className="text-sm text-text-muted">Dr. Priya Sharma requested a follow-up appointment in 2 weeks.</p>
-                  <p className="text-xs text-brand-500 mt-1">1 day ago</p>
+          {upcomingAppt ? (
+            <div className="p-4 bg-health-ivory/60 rounded-xl border border-health-sage/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-health-charcoal">
+                  Dr. {upcomingAppt.doctor?.user?.firstName} {upcomingAppt.doctor?.user?.lastName}
+                </p>
+                <p className="text-xs text-health-olive">{upcomingAppt.department?.name || 'General Consultation'}</p>
+                <div className="flex items-center space-x-4 text-xs font-medium text-health-charcoal mt-2">
+                  <span>📅 {new Date(upcomingAppt.appointmentDate).toLocaleDateString()}</span>
+                  <span>⏰ {upcomingAppt.timeSlot}</span>
                 </div>
               </div>
+              <StatusBadge status={upcomingAppt.status} />
+            </div>
+          ) : (
+            <p className="text-sm text-health-olive py-6 text-center">No upcoming appointments scheduled.</p>
+          )}
+
+          {/* Recent Records List */}
+          <div className="pt-4 space-y-3">
+            <h3 className="text-sm font-bold text-health-charcoal">Recent Medical Visits</h3>
+            <div className="space-y-2">
+              {records.slice(0, 3).map((rec) => (
+                <div key={rec.id} className="p-3 bg-white rounded-xl border border-health-gray flex items-center justify-between text-xs">
+                  <div>
+                    <p className="font-semibold text-health-charcoal">{rec.diagnosis || 'Clinical Consultation'}</p>
+                    <p className="text-health-olive">Visited Dr. {rec.doctor?.user?.lastName} on {new Date(rec.visitDate).toLocaleDateString()}</p>
+                  </div>
+                  <Link to="/patient/records" className="text-health-olive hover:text-health-charcoal font-semibold">Details &rarr;</Link>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Sidebar Quick Actions */}
+        {/* AI & Quick Actions Sidebar */}
         <div className="space-y-6">
-          <div className="bg-brand-700 rounded-2xl shadow-card p-6 text-white text-center relative overflow-hidden">
-            <div className="absolute -top-4 -right-4 w-24 h-24 bg-brand-600 rounded-full opacity-50"></div>
-            <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-brand-500 rounded-full opacity-50"></div>
-            <Activity className="w-10 h-10 mx-auto mb-3 text-brand-100 relative z-10" />
-            <h3 className="font-bold text-lg mb-2 relative z-10">AI Health Assistant</h3>
-            <p className="text-brand-100 text-sm mb-4 relative z-10">Have questions about your reports or prescriptions? Ask our AI assistant.</p>
-            <button onClick={() => alert("Action triggered successfully! Real-time module connection pending.")} className="bg-white text-brand-700 font-bold py-2 px-4 rounded-lg w-full transition-transform hover:scale-105 relative z-10 shadow-md">
-              Start Chat
-            </button>
+          <div className="bg-health-sage/30 rounded-2xl border border-health-sage p-6 shadow-sm space-y-3">
+            <div className="flex items-center space-x-2 text-health-charcoal font-bold">
+              <Bot className="w-5 h-5 text-health-olive" />
+              <span>AI Health Assistant</span>
+            </div>
+            <p className="text-xs text-health-olive leading-relaxed">
+              Have questions about your medications, symptoms, or lab results? Ask our AI assistant.
+            </p>
+            <Link
+              to="/patient/ai"
+              className="w-full py-2.5 bg-health-olive hover:bg-health-charcoal text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center space-x-1"
+            >
+              <span>Launch AI Workspace</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-card border border-brand-100 p-5">
-            <h3 className="font-bold text-lg text-brand-900 mb-4">Quick Actions</h3>
-            <div className="space-y-2">
-              <Link to="/patient/records" className="flex items-center justify-between p-3 rounded-xl hover:bg-brand-50 transition-colors group">
-                <div className="flex items-center text-text-dark font-medium group-hover:text-brand-700">
-                  <FileText className="w-5 h-5 mr-3 text-brand-500" />
-                  Medical Records
-                </div>
-                <ArrowRight className="w-4 h-4 text-brand-300 group-hover:text-brand-700" />
+          <div className="bg-white rounded-2xl border border-health-gray p-5 shadow-sm space-y-3">
+            <h3 className="text-xs font-bold text-health-charcoal uppercase tracking-wider">Quick Healthcare Shortcuts</h3>
+            <div className="space-y-2 text-xs">
+              <Link to="/patient/doctors" className="flex items-center justify-between p-2.5 rounded-lg border border-health-gray hover:bg-health-ivory text-health-charcoal font-medium">
+                <span>Find Doctor & Department</span>
+                <ArrowRight className="w-3.5 h-3.5 text-health-olive" />
               </Link>
-              <Link to="/patient/prescriptions" className="flex items-center justify-between p-3 rounded-xl hover:bg-brand-50 transition-colors group">
-                <div className="flex items-center text-text-dark font-medium group-hover:text-brand-700">
-                  <Pill className="w-5 h-5 mr-3 text-brand-500" />
-                  Prescriptions
-                </div>
-                <ArrowRight className="w-4 h-4 text-brand-300 group-hover:text-brand-700" />
+              <Link to="/patient/lab" className="flex items-center justify-between p-2.5 rounded-lg border border-health-gray hover:bg-health-ivory text-health-charcoal font-medium">
+                <span>Laboratory Reports</span>
+                <FlaskConical className="w-3.5 h-3.5 text-health-olive" />
               </Link>
-              <Link to="/patient/billing" className="flex items-center justify-between p-3 rounded-xl hover:bg-brand-50 transition-colors group">
-                <div className="flex items-center text-text-dark font-medium group-hover:text-brand-700">
-                  <CreditCard className="w-5 h-5 mr-3 text-brand-500" />
-                  Pay Bill
-                </div>
-                <ArrowRight className="w-4 h-4 text-brand-300 group-hover:text-brand-700" />
+              <Link to="/patient/prescriptions" className="flex items-center justify-between p-2.5 rounded-lg border border-health-gray hover:bg-health-ivory text-health-charcoal font-medium">
+                <span>Active Prescriptions</span>
+                <Pill className="w-3.5 h-3.5 text-health-olive" />
               </Link>
             </div>
           </div>

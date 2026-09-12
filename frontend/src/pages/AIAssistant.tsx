@@ -1,102 +1,184 @@
 import { useState } from 'react';
-import { Bot, Send, User, Sparkles } from 'lucide-react';
+import { Bot, Send, AlertTriangle, FileText } from 'lucide-react';
+import { apiFetch } from '../services/api';
 
 export default function AIAssistant() {
-  const [messages, setMessages] = useState([
-    { role: 'ai', content: "Hello! I am your AI Hospital Assistant. I can help you summarize medical records, check schedules, or answer general healthcare operational questions. How can I assist you today?" }
+  const [messages, setMessages] = useState<Array<{ sender: 'user' | 'ai'; text: string; disclaimer?: string }>>([
+    {
+      sender: 'ai',
+      text: 'Hello! I am the Smart Hospital Management System AI Assistant. How can I assist you with clinical record summaries or hospital administrative workflows today?',
+      disclaimer: 'Disclaimer: This AI service does not replace clinical judgment or medical diagnosis.'
+    }
   ]);
-  const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [inputMsg, setInputMsg] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [patientIdSummary, setPatientIdSummary] = useState('');
+  const [clinicalNotesInput, setClinicalNotesInput] = useState('');
+  const [summaryResult, setSummaryResult] = useState<any>(null);
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSendChat = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!inputMsg.trim() || loading) return;
 
-    // Add user message
-    const newMessages = [...messages, { role: 'user', content: input }];
-    setMessages(newMessages);
-    setInput('');
-    setIsTyping(true);
+    const userText = inputMsg.trim();
+    setInputMsg('');
+    setMessages((prev) => [...prev, { sender: 'user', text: userText }]);
+    setLoading(true);
 
-    // Simulate AI response (since backend might not be running locally)
-    setTimeout(() => {
-      setMessages([
-        ...newMessages, 
-        { role: 'ai', content: "I've processed your request! As an AI assistant in demo mode, I am connected to the interface. Once the Python FastAPI service is running, I will pull real-time data from the hospital database to answer this accurately." }
+    try {
+      const data = await apiFetch('/ai/chat', {
+        method: 'POST',
+        body: JSON.stringify({ message: userText, context: 'Hospital Platform Portal' })
+      });
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: 'ai',
+          text: data.reply || 'Request processed.',
+          disclaimer: data.disclaimer
+        }
       ]);
-      setIsTyping(false);
-    }, 1500);
+    } catch (err: any) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: 'ai',
+          text: 'AI Service currently operating in deterministic fallback mode: ' + (err.message || 'Service offline'),
+          disclaimer: 'Fallback response active.'
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSummarizeRecord = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!patientIdSummary || !clinicalNotesInput) return;
+
+    try {
+      const data = await apiFetch('/ai/summarize', {
+        method: 'POST',
+        body: JSON.stringify({
+          patient_id: patientIdSummary,
+          clinical_notes: clinicalNotesInput
+        })
+      });
+      setSummaryResult(data);
+    } catch (err: any) {
+      alert(err.message || 'Summarization failed');
+    }
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] bg-white rounded-2xl shadow-card border border-brand-100 overflow-hidden">
-      {/* Chat Header */}
-      <div className="bg-brand-700 p-4 flex items-center justify-between text-white">
-        <div className="flex items-center">
-          <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mr-3 backdrop-blur-sm">
-            <Bot className="w-6 h-6 text-white" />
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl border border-health-gray p-6 shadow-sm">
+        <div className="flex items-center space-x-3">
+          <div className="p-2.5 bg-health-sage/30 rounded-xl text-health-olive">
+            <Bot className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="font-bold text-lg flex items-center">SHMS AI Assistant <Sparkles className="w-4 h-4 ml-2 text-brand-200" /></h2>
-            <p className="text-brand-100 text-xs">Powered by Hospital AI Logic</p>
+            <h1 className="text-xl font-bold text-health-charcoal">AI Hospital Operations & Clinical Assistant</h1>
+            <p className="text-sm text-health-olive">Clinical record summarization, operational AI Q&A, and patient triage support.</p>
           </div>
         </div>
       </div>
 
-      {/* Chat History */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-brand-50/30 custom-scrollbar">
-        {messages.map((msg, index) => (
-          <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`flex max-w-[80%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                msg.role === 'user' ? 'bg-brand-600 ml-3' : 'bg-brand-100 mr-3'
-              }`}>
-                {msg.role === 'user' ? <User className="w-5 h-5 text-white" /> : <Bot className="w-5 h-5 text-brand-700" />}
-              </div>
-              <div className={`p-4 rounded-2xl ${
-                msg.role === 'user' 
-                  ? 'bg-brand-600 text-white rounded-tr-sm shadow-md' 
-                  : 'bg-white text-text-dark border border-brand-100 rounded-tl-sm shadow-sm'
-              }`}>
-                <p className="text-sm leading-relaxed">{msg.content}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-        {isTyping && (
-          <div className="flex justify-start">
-            <div className="flex flex-row max-w-[80%]">
-              <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0 mr-3">
-                <Bot className="w-5 h-5 text-brand-700" />
-              </div>
-              <div className="p-4 bg-white border border-brand-100 rounded-2xl rounded-tl-sm shadow-sm flex items-center space-x-2">
-                <div className="w-2 h-2 bg-brand-400 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-brand-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-2 h-2 bg-brand-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-              </div>
-            </div>
-          </div>
-        )}
+      <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-xs flex items-center space-x-2">
+        <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+        <span>Safety Notice: AI outputs are generated as administrative and clinical support tools and do not constitute formal diagnostic advice.</span>
       </div>
 
-      {/* Input Area */}
-      <div className="p-4 bg-white border-t border-brand-100">
-        <form onSubmit={handleSend} className="relative flex items-center">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your medical or operational query here..."
-            className="w-full pl-5 pr-14 py-4 bg-brand-50 border border-brand-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all text-sm text-text-dark"
-          />
-          <button 
-            type="submit"
-            disabled={!input.trim() || isTyping}
-            className="absolute right-2 p-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-          >
-            <Send className="w-5 h-5" />
-          </button>
-        </form>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Interactive Chat Console */}
+        <div className="bg-white rounded-2xl border border-health-gray p-5 shadow-sm flex flex-col h-[500px]">
+          <h3 className="font-bold text-health-charcoal text-sm pb-3 border-b border-health-gray mb-3 flex items-center space-x-2">
+            <Bot className="w-4 h-4 text-health-olive" />
+            <span>Operational AI Chat Terminal</span>
+          </h3>
+
+          <div className="flex-1 overflow-y-auto space-y-3 p-2 custom-scrollbar text-xs">
+            {messages.map((m, idx) => (
+              <div key={idx} className={`flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}`}>
+                <div
+                  className={`p-3 rounded-2xl max-w-[85%] ${
+                    m.sender === 'user' ? 'bg-health-olive text-white' : 'bg-health-ivory text-health-charcoal border border-health-gray'
+                  }`}
+                >
+                  <p>{m.text}</p>
+                </div>
+                {m.disclaimer && <span className="text-[10px] text-health-olive mt-1 italic max-w-[85%]">{m.disclaimer}</span>}
+              </div>
+            ))}
+            {loading && <p className="text-xs text-health-olive italic">AI assistant is reflecting...</p>}
+          </div>
+
+          <form onSubmit={handleSendChat} className="pt-3 border-t border-health-gray flex space-x-2">
+            <input
+              type="text"
+              value={inputMsg}
+              onChange={(e) => setInputMsg(e.target.value)}
+              placeholder="Ask AI about appointments, pharmacy, or clinical workflow..."
+              className="flex-1 px-3 py-2 border border-health-gray rounded-xl text-xs bg-health-ivory/50 focus:outline-none focus:ring-2 focus:ring-health-olive"
+            />
+            <button type="submit" className="p-2 bg-health-olive hover:bg-health-charcoal text-white rounded-xl">
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
+        </div>
+
+        {/* Clinical Summarizer Tool */}
+        <div className="bg-white rounded-2xl border border-health-gray p-5 shadow-sm space-y-4">
+          <h3 className="font-bold text-health-charcoal text-sm pb-3 border-b border-health-gray flex items-center space-x-2">
+            <FileText className="w-4 h-4 text-health-olive" />
+            <span>AI Clinical Record Summarizer</span>
+          </h3>
+
+          <form onSubmit={handleSummarizeRecord} className="space-y-3 text-xs">
+            <div>
+              <label className="block font-semibold mb-1">Patient ID / MRN</label>
+              <input
+                required
+                value={patientIdSummary}
+                onChange={(e) => setPatientIdSummary(e.target.value)}
+                placeholder="e.g. MRN-10001"
+                className="w-full p-2.5 border border-health-gray rounded-xl bg-health-ivory/50"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold mb-1">Clinical SOAP Notes & Symptoms</label>
+              <textarea
+                rows={4}
+                required
+                value={clinicalNotesInput}
+                onChange={(e) => setClinicalNotesInput(e.target.value)}
+                placeholder="Paste raw physician notes, lab parameters, or encounter observations..."
+                className="w-full p-2.5 border border-health-gray rounded-xl bg-health-ivory/50"
+              />
+            </div>
+            <button type="submit" className="w-full py-2.5 bg-health-olive text-white font-medium rounded-xl hover:bg-health-charcoal">
+              Generate AI Clinical Summary
+            </button>
+          </form>
+
+          {summaryResult && (
+            <div className="p-4 bg-health-ivory/60 rounded-xl border border-health-sage/40 text-xs space-y-2">
+              <h4 className="font-bold text-health-charcoal">Generated AI Clinical Summary</h4>
+              <p className="text-health-olive whitespace-pre-line">{summaryResult.summary}</p>
+              {summaryResult.recommended_actions && (
+                <div className="pt-2 border-t border-health-gray">
+                  <span className="font-semibold text-health-charcoal">Recommended Next Actions:</span>
+                  <ul className="list-disc list-inside text-health-olive mt-1">
+                    {summaryResult.recommended_actions.map((act: string, i: number) => (
+                      <li key={i}>{act}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

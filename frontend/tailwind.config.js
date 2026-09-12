@@ -7,30 +7,32 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: '#F8F7FC',  // Background
-          100: '#EDE9FE', // Lavender
-          200: '#DDD6FE',
-          300: '#C4B5FD',
-          400: '#A78BFA',
-          500: '#8B5CF6', // Light Violet
-          600: '#7C3AED',
-          700: '#6D28D9', // Primary Violet
-          800: '#5B21B6',
-          900: '#4C1D95', // Deep Purple
-          950: '#2E1065',
+        health: {
+          ivory: '#F8F7F3',
+          charcoal: '#202320',
+          olive: '#66705A',
+          sage: '#DDE5D8',
+          terracotta: '#A86A50',
+          gold: '#B28A45',
+          red: '#B85C56',
+          gray: '#ECEBE6',
         },
-        text: {
-          dark: '#1F1B2D', // Dark Text
-          muted: '#6B6475', // Secondary Text
-        }
+        brand: {
+          50: '#f4f6f3',
+          100: '#dde5d8',
+          200: '#becdb5',
+          300: '#9cb08f',
+          400: '#7c946e',
+          500: '#66705a',
+          600: '#525b48',
+          700: '#404738',
+          800: '#30342a',
+          900: '#202320',
+        },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
-      boxShadow: {
-        'card': '0 4px 6px -1px rgba(109, 40, 217, 0.1), 0 2px 4px -1px rgba(109, 40, 217, 0.06)',
-      }
     },
   },
   plugins: [],

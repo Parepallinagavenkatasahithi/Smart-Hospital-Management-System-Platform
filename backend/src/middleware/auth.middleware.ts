@@ -1,31 +1,57 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyToken } from '../utils/jwt.utils';
+import jwt from 'jsonwebtoken';
 
 export interface AuthRequest extends Request {
-  user?: any;
+  user?: {
+    userId: string;
+    email: string;
+    role: string;
+    firstName?: string;
+    lastName?: string;
+  };
 }
 
-export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'Authorization token missing or invalid' });
-    }
+const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-jwt-key-for-shms-production';
 
-    const token = authHeader.split(' ')[1];
-    const decoded = verifyToken(token);
+export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      error: { code: 'UNAUTHORIZED', message: 'Access token is missing or malformed' }
+    });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
     req.user = decoded;
     next();
   } catch (error) {
-    return res.status(401).json({ message: 'Invalid or expired token' });
+    return res.status(403).json({
+      success: false,
+      error: { code: 'FORBIDDEN', message: 'Token is invalid or expired' }
+    });
   }
 };
 
-export const requireRole = (roles: string[]) => {
+export const authorizeRoles = (...roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Access denied: insufficient permissions' });
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'User not authenticated' }
+      });
     }
+
+    if (!roles.includes(req.user.role) && req.user.role !== 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'INSUFFICIENT_PERMISSIONS', message: `Role ${req.user.role} does not have access to this resource` }
+      });
+    }
+
     next();
   };
 };
