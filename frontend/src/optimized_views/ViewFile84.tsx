@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { User, Activity, Building, ArrowLeft } from 'lucide-react';
+
+type Role = 'PATIENT' | 'STAFF' | 'MANAGEMENT' | null;
 
 export function OptimizedView_84_1() {
 
