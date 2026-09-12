@@ -1,0 +1,273 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PATIENT
+  DOCTOR
+  NURSE
+  RECEPTIONIST
+  PHARMACIST
+  LAB_TECHNICIAN
+  ACCOUNTANT
+  MANAGEMENT
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         Role
+  firstName    String
+  lastName     String
+  phone        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  isActive     Boolean  @default(true)
+
+  patientProfile Patient?
+  staffProfile   Staff?
+  auditLogs      AuditLog[]
+}
+
+model Patient {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateOfBirth    DateTime
+  gender         String
+  address        String?
+  bloodGroup     String?
+  emergencyContact String?
+  allergies      String?
+  medicalHistory String?
+  
+  appointments   Appointment[]
+  medicalRecords MedicalRecord[]
+  prescriptions  Prescription[]
+  labRequests    LabRequest[]
+  invoices       Invoice[]
+}
+
+model Department {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+
+  staff       Staff[]
+  appointments Appointment[]
+}
+
+model Staff {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  departmentId   String?
+  department     Department? @relation(fields: [departmentId], references: [id])
+  specialization String?
+  experience     Int?
+  qualification  String?
+  consultationFee Float?
+  
+  appointmentsAsDoctor Appointment[]
+  medicalRecordsWritten MedicalRecord[]
+}
+
+model Appointment {
+  id            String   @id @default(uuid())
+  patientId     String
+  patient       Patient  @relation(fields: [patientId], references: [id])
+  doctorId      String
+  doctor        Staff    @relation(fields: [doctorId], references: [id])
+  departmentId  String
+  department    Department @relation(fields: [departmentId], references: [id])
+  appointmentDate DateTime
+  status        AppointmentStatus @default(SCHEDULED)
+  reason        String?
+  notes         String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model MedicalRecord {
+  id            String   @id @default(uuid())
+  patientId     String
+  patient       Patient  @relation(fields: [patientId], references: [id])
+  doctorId      String
+  doctor        Staff    @relation(fields: [doctorId], references: [id])
+  visitDate     DateTime @default(now())
+  symptoms      String?
+  diagnosis     String?
+  clinicalNotes String?
+  vitals        Json?
+  followUpInstructions String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Prescription {
+  id            String   @id @default(uuid())
+  patientId     String
+  patient       Patient  @relation(fields: [patientId], references: [id])
+  doctorId      String
+  notes         String?
+  isDispensed   Boolean  @default(false)
+  
+  items         PrescriptionItem[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model PrescriptionItem {
+  id             String   @id @default(uuid())
+  prescriptionId String
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  medicineId     String
+  medicine       Medicine @relation(fields: [medicineId], references: [id])
+  dosage         String
+  frequency      String
+  duration       String
+  instructions   String?
+}
+
+model Medicine {
+  id            String   @id @default(uuid())
+  name          String
+  category      String
+  batchNumber   String?
+  expiryDate    DateTime?
+  quantity      Int      @default(0)
+  supplier      String?
+  price         Float
+  reorderLevel  Int      @default(10)
+  
+  prescriptionItems PrescriptionItem[]
+}
+
+model LabTest {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  
+  requests    LabRequest[]
+}
+
+model LabRequest {
+  id            String   @id @default(uuid())
+  patientId     String
+  patient       Patient  @relation(fields: [patientId], references: [id])
+  doctorId      String
+  testId        String
+  test          LabTest  @relation(fields: [testId], references: [id])
+  status        LabStatus @default(PENDING)
+  resultData    String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+enum LabStatus {
+  PENDING
+  SAMPLE_COLLECTED
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+model Room {
+  id       String @id @default(uuid())
+  number   String @unique
+  type     String
+  ward     String
+  beds     Bed[]
+}
+
+model Bed {
+  id        String   @id @default(uuid())
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id])
+  number    String
+  status    BedStatus @default(AVAILABLE)
+}
+
+enum BedStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  MAINTENANCE
+}
+
+model Invoice {
+  id            String   @id @default(uuid())
+  patientId     String
+  patient       Patient  @relation(fields: [patientId], references: [id])
+  totalAmount   Float
+  paidAmount    Float    @default(0)
+  status        InvoiceStatus @default(PENDING)
+  
+  items         InvoiceItem[]
+  payments      Payment[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+enum InvoiceStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model InvoiceItem {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  amount      Float
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  invoiceId     String
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount        Float
+  paymentMethod String
+  paymentDate   DateTime @default(now())
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  message     String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  action      String
+  resource    String
+  details     Json?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+}

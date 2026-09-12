@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-brand-50 text-text-dark font-sans;
+  }
+}
+
+/* Custom Scrollbar styled for the brand */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-brand-50;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-brand-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-brand-500;
+}

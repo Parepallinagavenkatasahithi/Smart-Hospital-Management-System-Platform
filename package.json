@@ -1,0 +1,10 @@
+{
+  "name": "smart-hospital-management-system",
+  "version": "1.0.0",
+  "description": "Smart Hospital Management System",
+  "scripts": {
+    "start": "cd backend && npm start",
+    "build": "cd frontend && npm run build",
+    "test": "cd backend && npm test"
+  }
+}
